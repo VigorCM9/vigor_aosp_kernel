@@ -52,6 +52,133 @@ static DEFINE_PER_CPU(struct cpufreq_suspend_t, cpufreq_suspend);
 
 static int override_cpu;
 
+/*
+ * start cmdline_khz
+ */
+
+/* to be safe, fill vars with defaults */
+uint32_t cmdline_maxkhz = 1566000, cmdline_minkhz = 192000;
+char cmdline_gov[16] = "ondemand";
+uint32_t cmdline_maxscroff = 432000;
+/* only override the governor 2 times, when
+ * initially bringing up cpufreq on the cpus */
+int cmdline_gov_cnt = 2;
+
+static int __init cpufreq_read_maxkhz_cmdline(char *maxkhz)
+{
+	uint32_t check;
+	unsigned long ui_khz;
+	int err;
+
+	err = strict_strtoul(maxkhz, 0, &ui_khz);
+	if (err) {
+		cmdline_maxkhz = CONFIG_MSM_CPU_FREQ_MAX;
+		printk(KERN_INFO "[cmdline_khz_max]: ERROR while converting! using default value!");
+		printk(KERN_INFO "[cmdline_khz_max]: maxkhz='%i'\n", cmdline_maxkhz);
+		return 1;
+	}
+
+	check = acpu_check_khz_value(ui_khz);
+
+	if (check == 1) {
+		cmdline_maxkhz = ui_khz;
+		printk(KERN_INFO "[cmdline_khz_max]: maxkhz='%u'\n", cmdline_maxkhz);
+	}
+	if (check == 0) {
+		cmdline_maxkhz = CONFIG_MSM_CPU_FREQ_MAX;
+		printk(KERN_INFO "[cmdline_khz_max]: ERROR! using default value!");
+		printk(KERN_INFO "[cmdline_khz_max]: maxkhz='%u'\n", cmdline_maxkhz);
+	}
+	if (check > 1) {
+		cmdline_maxkhz = check;
+		printk(KERN_INFO "[cmdline_khz_max]: AUTOCORRECT! Could not find entered value in the acpu table!");
+		printk(KERN_INFO "[cmdline_khz_max]: maxkhz='%u'\n", cmdline_maxkhz);
+	}
+        return 1;
+}
+__setup("maxkhz=", cpufreq_read_maxkhz_cmdline);
+
+static int __init cpufreq_read_minkhz_cmdline(char *minkhz)
+{
+	uint32_t check;
+	unsigned long ui_khz;
+	int err;
+
+	err = strict_strtoul(minkhz, 0, &ui_khz);
+	if (err) {
+		cmdline_minkhz = CONFIG_MSM_CPU_FREQ_MIN;
+		printk(KERN_INFO "[cmdline_khz_min]: ERROR while converting! using default value!");
+		printk(KERN_INFO "[cmdline_khz_min]: minkhz='%i'\n", cmdline_minkhz);
+		return 1;
+	}
+
+	check = acpu_check_khz_value(ui_khz);
+
+	if (check == 1) {
+		cmdline_minkhz = ui_khz;
+		printk(KERN_INFO "[cmdline_khz_min]: minkhz='%u'\n", cmdline_minkhz);
+	}
+	if (check == 0) {
+		cmdline_minkhz = CONFIG_MSM_CPU_FREQ_MIN;
+		printk(KERN_INFO "[cmdline_khz_min]: ERROR! using default value!");
+		printk(KERN_INFO "[cmdline_khz_min]: minkhz='%u'\n", cmdline_minkhz);
+	}
+	if (check > 1) {
+		cmdline_minkhz = check;
+		printk(KERN_INFO "[cmdline_khz_min]: AUTOCORRECT! Could not find entered value in the acpu table!");
+		printk(KERN_INFO "[cmdline_khz_min]: minkhz='%u'\n", cmdline_minkhz);
+	}
+        return 1;
+}
+__setup("minkhz=", cpufreq_read_minkhz_cmdline);
+
+static int __init cpufreq_read_gov_cmdline(char *gov)
+{
+	if (gov) {
+		strcpy(cmdline_gov, gov);
+		printk(KERN_INFO "[cmdline_gov]: Governor will be set to '%s'", cmdline_gov);
+	} else {
+		printk(KERN_INFO "[cmdline_gov]: No input found.");
+	}
+	return 1;
+}
+__setup("gov=", cpufreq_read_gov_cmdline);
+
+static int __init cpufreq_read_maxscroff_cmdline(char *maxscroff)
+{
+	uint32_t check;
+	unsigned long ui_khz;
+	int err;
+
+	err = strict_strtoul(maxscroff, 0, &ui_khz);
+	if (err) {
+		cmdline_maxscroff = cmdline_maxkhz;
+		printk(KERN_INFO "[cmdline_maxscroff]: ERROR while converting! using maxkhz value!");
+		printk(KERN_INFO "[cmdline_maxscroff]: maxscroff='%i'\n", cmdline_maxscroff);
+		return 1;
+	}
+
+	check = acpu_check_khz_value(ui_khz);
+
+	if (check == 1) {
+		cmdline_maxscroff = ui_khz;
+		printk(KERN_INFO "[cmdline_maxscroff]: maxscroff='%u'\n", cmdline_maxscroff);
+	}
+	if (check == 0) {
+		cmdline_maxscroff = cmdline_maxkhz;
+		printk(KERN_INFO "[cmdline_maxscroff]: ERROR! using maxkhz value!");
+		printk(KERN_INFO "[cmdline_maxscroff]: maxscroff='%u'\n", cmdline_maxscroff);
+	}
+	if (check > 1) {
+		cmdline_maxscroff = check;
+		printk(KERN_INFO "[cmdline_maxscroff]: AUTOCORRECT! Could not find entered value in the acpu table!");
+		printk(KERN_INFO "[cmdline_maxscroff]: maxscroff='%u'\n", cmdline_maxscroff);
+	}
+        return 1;
+}
+__setup("maxscroff=", cpufreq_read_maxscroff_cmdline);
+/* end cmdline_khz */
+
 static int set_cpu_freq(struct cpufreq_policy *policy, unsigned int new_freq)
 {
 	int ret = 0;
