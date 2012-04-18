@@ -465,9 +465,13 @@ config TOUCHSCREEN_TNETV107X
 	depends on ARCH_DAVINCI_TNETV107X
 	help
 	  Say Y here if you want to use the TNETV107X touchscreen.
-
 	  To compile this driver as a module, choose M here: the
 	  module will be called tnetv107x-ts.
+
+config TOUCHSCREEN_ATMEL_SWEEP2WAKE
+        tristate "Sweep2Wake for Atmel based touchscreens"
+        depends on TOUCHSCREEN_ATMEL_224E
+        default n
 
 config TOUCHSCREEN_SYNAPTICS_I2C_RMI
 	tristate "Synaptics i2c touchscreen"
