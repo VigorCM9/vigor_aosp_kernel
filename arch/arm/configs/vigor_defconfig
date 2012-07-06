@@ -1133,6 +1133,7 @@ CONFIG_TZCOM=y
 # CONFIG_SENSORS_LIS3_I2C is not set
 CONFIG_HAVE_IDE=y
 # CONFIG_IDE is not set
+CONFIG_FSYNC_CONTROL=y
 
 #
 # SCSI device support
