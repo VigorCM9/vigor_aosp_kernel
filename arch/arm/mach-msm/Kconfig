@@ -1521,6 +1521,7 @@ config MSM_DALRPC_TEST
 	help
 	  Exercises DAL RPC calls to QDSP6.
 
+
 config MSM_MPDEC
 	bool "Enable kernel based mpdecision"
 	depends on MSM_SMP
@@ -1528,6 +1529,11 @@ config MSM_MPDEC
 	help
 	  This enables kernel based multi core control.
 	  (up/down hotplug based on load)
+
+config GPU_OVERCLOCK
+	bool "Enable GPU Overclocking option"
+	default n
+
 
 if CPU_FREQ_MSM
 
