@@ -21,7 +21,7 @@
  * software in any way with any other Broadcom software provided under a license
  * other than the GPL, without Broadcom's express prior written consent.
  *
- * $Id: linux_osl.c 281175 2011-09-01 09:46:46Z $
+ * $Id: linux_osl.c,v 1.168.2.7 2011-01-27 17:01:13 Exp $
  */
 
 
@@ -179,12 +179,7 @@ osl_attach(void *pdev, uint bustype, bool pkttag)
 	osh = kmalloc(sizeof(osl_t), GFP_ATOMIC);
 #endif 
 	ASSERT(osh);
-#ifdef HTC_KlocWork
-    if(osh == NULL) {
-        printf("[HTCKW] osl_attach: osh == NULL\n");
-        return NULL;
-    }
-#endif
+
 	bzero(osh, sizeof(osl_t));
 
 	
@@ -220,13 +215,10 @@ osl_attach(void *pdev, uint bustype, bool pkttag)
 	if (!bcm_static_buf) {
 		if (!(bcm_static_buf = (bcm_static_buf_t *)dhd_os_prealloc(osh, 3, STATIC_BUF_SIZE+
 			STATIC_BUF_TOTAL_LEN))) {
-			printf("can not alloc static buf!\n");
-#ifdef HTC_KlocWork
-			return NULL;
-#endif
+			printk("can not alloc static buf!\n");
 		}
 		else
-			printf("alloc static buf at %x!\n", (unsigned int)bcm_static_buf);
+			printk("alloc static buf at %x!\n", (unsigned int)bcm_static_buf);
 
 
 		sema_init(&bcm_static_buf->static_sem, 1);
@@ -240,9 +232,6 @@ osl_attach(void *pdev, uint bustype, bool pkttag)
 		bcm_static_skb = (bcm_static_pkt_t *)((char *)bcm_static_buf + 2048);
 		skb_buff_ptr = dhd_os_prealloc(osh, 4, 0);
 
-#ifdef HTC_KlocWork
-    if(skb_buff_ptr != NULL)
-#endif
 		bcopy(skb_buff_ptr, bcm_static_skb, sizeof(struct sk_buff *) * 16);
 		for (i = 0; i < STATIC_PKT_MAX_NUM * 2; i++)
 			bcm_static_skb->pkt_use[i] = 0;
@@ -462,7 +451,7 @@ osl_pktfastget(osl_t *osh, uint len)
 
 	return skb;
 }
-#endif 
+#endif
 
 
 void * BCMFASTPATH
@@ -471,15 +460,13 @@ osl_pktget(osl_t *osh, uint len)
 	struct sk_buff *skb;
 
 #ifdef CTFPOOL
-	
 	skb = osl_pktfastget(osh, len);
 	if ((skb != NULL) || ((skb = osl_alloc_skb(len)) != NULL)) {
-#else 
+#else
 	if ((skb = osl_alloc_skb(len))) {
-#endif 
+#endif
 		skb_put(skb, len);
 		skb->priority = 0;
-
 
 		osh->pub.pktalloced++;
 	}
@@ -569,7 +556,7 @@ osl_pktget_static(osl_t *osh, uint len)
 	struct sk_buff *skb;
 
 	if (len > (PAGE_SIZE * 2)) {
-		printf("%s: attempt to allocate huge packet (0x%x)\n", __FUNCTION__, len);
+		printk("%s: attempt to allocate huge packet (0x%x)\n", __FUNCTION__, len);
 		return osl_pktget(osh, len);
 	}
 
@@ -607,7 +594,7 @@ osl_pktget_static(osl_t *osh, uint len)
 	}
 
 	up(&bcm_static_skb->osl_pkt_sem);
-	printf("%s: all static pkt in use!\n", __FUNCTION__);
+	printk("%s: all static pkt in use!\n", __FUNCTION__);
 	return osl_pktget(osh, len);
 }
 
