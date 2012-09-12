@@ -21,7 +21,7 @@
  * software in any way with any other Broadcom software provided under a license
  * other than the GPL, without Broadcom's express prior written consent.
  *
- * $Id: bcmsdh_sdmmc_linux.c 282820 2011-09-09 15:40:35Z $
+ * $Id: bcmsdh_sdmmc_linux.c,v 1.8.6.2 2011-02-01 18:38:36 Exp $
  */
 
 #include <typedefs.h>
@@ -55,22 +55,14 @@
 #if !defined(SDIO_DEVICE_ID_BROADCOM_4319)
 #define SDIO_DEVICE_ID_BROADCOM_4319	0x4319
 #endif /* !defined(SDIO_DEVICE_ID_BROADCOM_4319) */
-/* HTC_CSP_START */
-#if !defined(SDIO_DEVICE_ID_BROADCOM_4330)
-#define SDIO_DEVICE_ID_BROADCOM_4330	0x4330
-#endif /* !defined(SDIO_DEVICE_ID_BROADCOM_4330) */
-/* HTC_CSP_END */
-#if !defined(SDIO_DEVICE_ID_BROADCOM_4334)
-#define SDIO_DEVICE_ID_BROADCOM_4334    0x4334
-#endif /* !defined(SDIO_DEVICE_ID_BROADCOM_4334) */
-#if !defined(SDIO_DEVICE_ID_BROADCOM_4324)
-#define SDIO_DEVICE_ID_BROADCOM_4324    0x4324
-#endif /* !defined(SDIO_DEVICE_ID_BROADCOM_4324) */
 
 #include <bcmsdh_sdmmc.h>
 
 #include <dhd_dbg.h>
 
+#ifdef WL_CFG80211
+extern void wl_cfg80211_set_sdio_func(void *func);
+#endif
 
 extern void sdioh_sdmmc_devintr_off(sdioh_info_t *sd);
 extern void sdioh_sdmmc_devintr_on(sdioh_info_t *sd);
@@ -126,7 +118,7 @@ static int bcmsdh_sdmmc_probe(struct sdio_func *func,
 
 	if (func->num == 2) {
 #ifdef WL_CFG80211
-		wl_cfg80211_set_parent_dev(&func->dev);
+		wl_cfg80211_set_sdio_func(func);
 #endif
 		sd_trace(("F2 found, calling bcmsdh_probe...\n"));
 		ret = bcmsdh_probe(&func->dev);
@@ -161,12 +153,7 @@ static const struct sdio_device_id bcmsdh_sdmmc_ids[] = {
 	{ SDIO_DEVICE(SDIO_VENDOR_ID_BROADCOM, SDIO_DEVICE_ID_BROADCOM_4325) },
 	{ SDIO_DEVICE(SDIO_VENDOR_ID_BROADCOM, SDIO_DEVICE_ID_BROADCOM_4329) },
 	{ SDIO_DEVICE(SDIO_VENDOR_ID_BROADCOM, SDIO_DEVICE_ID_BROADCOM_4319) },
-/* HTC_CSP_START */
-	{ SDIO_DEVICE(SDIO_VENDOR_ID_BROADCOM, SDIO_DEVICE_ID_BROADCOM_4330) },
-	// Broadcom, remove SDIO all { SDIO_DEVICE_CLASS(SDIO_CLASS_NONE)		},
-/* HTC_CSP_END */
-	{ SDIO_DEVICE(SDIO_VENDOR_ID_BROADCOM, SDIO_DEVICE_ID_BROADCOM_4334) },
-	{ SDIO_DEVICE(SDIO_VENDOR_ID_BROADCOM, SDIO_DEVICE_ID_BROADCOM_4324) },
+	{ SDIO_DEVICE_CLASS(SDIO_CLASS_NONE)		},
 	{ /* end: all zeroes */				},
 };
 

@@ -1,5 +1,6 @@
 /*
- * Linux cfg80211 driver - Dongle Host Driver (DHD) related
+ * Minimal debug/trace/assert driver definitions for
+ * Broadcom 802.11 Networking Adapter.
  *
  * Copyright (C) 1999-2011, Broadcom Corporation
  * 
@@ -21,22 +22,28 @@
  * software in any way with any other Broadcom software provided under a license
  * other than the GPL, without Broadcom's express prior written consent.
  *
- * $Id: wl_cfg80211.c,v 1.1.4.1.2.14 2011/02/09 01:40:07 Exp $
+ * $Id: wl_dbg.h,v 1.115.6.3 2010-12-15 21:42:23 Exp $
  */
 
 
-#ifndef __DHD_CFG80211__
-#define __DHD_CFG80211__
 
-#include <wl_cfg80211.h>
-#include <wl_cfgp2p.h>
+#ifndef _wl_dbg_h_
+#define _wl_dbg_h_
 
-s32 dhd_cfg80211_init(struct wl_priv *wl);
-s32 dhd_cfg80211_deinit(struct wl_priv *wl);
-s32 dhd_cfg80211_down(struct wl_priv *wl);
-s32 dhd_config_dongle(struct wl_priv *wl, bool need_lock);
 
-int wl_cfg80211_btcoex_init(struct wl_priv *wl);
-void wl_cfg80211_btcoex_deinit(struct wl_priv *wl);
+extern uint32 wl_msg_level;
+extern uint32 wl_msg_level2;
 
-#endif /* __DHD_CFG80211__ */
+#define WL_PRINT(args)      printf args
+
+
+
+#define WL_NONE(args)
+
+#define WL_ERROR(args)
+#define WL_TRACE(args)
+
+
+extern uint32 wl_msg_level;
+extern uint32 wl_msg_level2;
+#endif 
