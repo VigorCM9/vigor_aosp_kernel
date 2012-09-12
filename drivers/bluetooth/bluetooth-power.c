@@ -21,11 +21,6 @@
 #include <linux/platform_device.h>
 #include <linux/rfkill.h>
 
-#if defined (CONFIG_MACH_LGE_I_BOARD)
-#include "../../lge/include/board_lge.h"
-static struct bluetooth_platform_data *bt_platform_data = 0;
-#else /* origin */
-
 static bool previous;
 
 static int bluetooth_toggle_radio(void *data, bool blocked)
@@ -40,24 +35,15 @@ static int bluetooth_toggle_radio(void *data, bool blocked)
 		previous = blocked;
 	return ret;
 }
-#endif
 
-/* LGE_CHANGES_S [taekeun1.kim@lge.com] 2010-06-06, for bt */
-#if defined (CONFIG_MACH_LGE_I_BOARD)
-static struct rfkill_ops bluetooth_power_rfkill_ops;
-#else
 static const struct rfkill_ops bluetooth_power_rfkill_ops = {
 	.set_block = bluetooth_toggle_radio,
 };
-#endif
 
 static int bluetooth_power_rfkill_probe(struct platform_device *pdev)
 {
 	struct rfkill *rfkill;
 	int ret;
-#if defined (CONFIG_MACH_LGE_I_BOARD)
-		bluetooth_power_rfkill_ops.set_block = bt_platform_data->bluetooth_toggle_radio;
-#endif
 
 	rfkill = rfkill_alloc("bt_power", &pdev->dev, RFKILL_TYPE_BLUETOOTH,
 			      &bluetooth_power_rfkill_ops,
@@ -70,9 +56,7 @@ static int bluetooth_power_rfkill_probe(struct platform_device *pdev)
 
 	/* force Bluetooth off during init to allow for user control */
 	rfkill_init_sw_state(rfkill, 1);
-#if !defined (CONFIG_MACH_LGE_I_BOARD)	
 	previous = 1;
-#endif
 
 	ret = rfkill_register(rfkill);
 	if (ret) {
@@ -110,9 +94,6 @@ static int __devinit bt_power_probe(struct platform_device *pdev)
 		return -ENOSYS;
 	}
 
-#if defined (CONFIG_MACH_LGE_I_BOARD)	
-		bt_platform_data = (struct bluetooth_platform_data *)pdev->dev.platform_data;
-#endif
 	ret = bluetooth_power_rfkill_probe(pdev);
 
 	return ret;

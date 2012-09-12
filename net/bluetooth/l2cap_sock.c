@@ -78,6 +78,23 @@ void l2cap_sock_clear_timer(struct sock *sk)
 	sk_stop_timer(sk, &sk->sk_timer);
 }
 
+int l2cap_sock_le_params_valid(struct bt_le_params *le_params)
+{
+	if (!le_params || le_params->latency > BT_LE_LATENCY_MAX ||
+			le_params->scan_window > BT_LE_SCAN_WINDOW_MAX ||
+			le_params->scan_interval < BT_LE_SCAN_INTERVAL_MIN ||
+			le_params->scan_window > le_params->scan_interval ||
+			le_params->interval_min < BT_LE_CONN_INTERVAL_MIN ||
+			le_params->interval_max > BT_LE_CONN_INTERVAL_MAX ||
+			le_params->interval_min > le_params->interval_max ||
+			le_params->supervision_timeout < BT_LE_SUP_TO_MIN ||
+			le_params->supervision_timeout > BT_LE_SUP_TO_MAX) {
+		return 0;
+	}
+
+	return 1;
+}
+
 static struct sock *__l2cap_get_sock_by_addr(__le16 psm, bdaddr_t *src)
 {
 	struct sock *sk;
@@ -505,8 +522,10 @@ static int l2cap_sock_getsockopt(struct socket *sock, int level, int optname, ch
 		memset(&sec, 0, sizeof(sec));
 		sec.level = l2cap_pi(sk)->sec_level;
 
-		if (sk->sk_state == BT_CONNECTED)
+		if (sk->sk_state == BT_CONNECTED) {
 			sec.key_size = l2cap_pi(sk)->conn->hcon->enc_key_size;
+			sec.level = l2cap_pi(sk)->conn->hcon->sec_level;
+		}
 
 		len = min_t(unsigned int, len, sizeof(sec));
 		if (copy_to_user(optval, (char *) &sec, len))
@@ -542,6 +561,17 @@ static int l2cap_sock_getsockopt(struct socket *sock, int level, int optname, ch
 
 	case BT_AMP_POLICY:
 		if (put_user(l2cap_pi(sk)->amp_pref, (u32 __user *) optval))
+			err = -EFAULT;
+		break;
+
+	case BT_LE_PARAMS:
+		if (l2cap_pi(sk)->scid != L2CAP_CID_LE_DATA) {
+			err = -EINVAL;
+			break;
+		}
+
+		if (copy_to_user(optval, (char *) &bt_sk(sk)->le_params,
+						sizeof(bt_sk(sk)->le_params)))
 			err = -EFAULT;
 		break;
 
@@ -669,6 +699,7 @@ static int l2cap_sock_setsockopt(struct socket *sock, int level, int optname, ch
 	struct sock *sk = sock->sk;
 	struct bt_security sec;
 	struct bt_power pwr;
+	struct bt_le_params le_params;
 	struct l2cap_conn *conn;
 	int len, err = 0;
 	u32 opt;
@@ -782,6 +813,41 @@ static int l2cap_sock_setsockopt(struct socket *sock, int level, int optname, ch
 		}
 		l2cap_pi(sk)->flushable = opt;
 
+		break;
+
+	case BT_LE_PARAMS:
+		if (l2cap_pi(sk)->scid != L2CAP_CID_LE_DATA) {
+			err = -EINVAL;
+			break;
+		}
+
+		if (copy_from_user((char *) &le_params, optval,
+					sizeof(struct bt_le_params))) {
+			err = -EFAULT;
+			break;
+		}
+
+		conn = l2cap_pi(sk)->conn;
+		if (!conn || !conn->hcon ||
+				l2cap_pi(sk)->scid != L2CAP_CID_LE_DATA) {
+			memcpy(&bt_sk(sk)->le_params, &le_params,
+							sizeof(le_params));
+			break;
+		}
+
+		if (!conn->hcon->out ||
+				!l2cap_sock_le_params_valid(&le_params)) {
+			err = -EINVAL;
+			break;
+		}
+
+		memcpy(&bt_sk(sk)->le_params, &le_params, sizeof(le_params));
+
+		hci_le_conn_update(conn->hcon,
+				le_params.interval_min,
+				le_params.interval_max,
+				le_params.latency,
+				le_params.supervision_timeout);
 		break;
 
 	default:
@@ -1105,7 +1171,7 @@ static int l2cap_sock_shutdown(struct socket *sock, int how)
 static int l2cap_sock_release(struct socket *sock)
 {
 	struct sock *sk = sock->sk;
-	struct sock *srv_sk = NULL;
+	struct sock *sk2 = NULL;
 	int err;
 
 	BT_DBG("sock %p, sk %p", sock, sk);
@@ -1113,15 +1179,16 @@ static int l2cap_sock_release(struct socket *sock)
 	if (!sk)
 		return 0;
 
-	/* If this is an ATT Client socket, find the matching Server */
-	if (l2cap_pi(sk)->scid == L2CAP_CID_LE_DATA && !l2cap_pi(sk)->incoming)
-		srv_sk = l2cap_find_sock_by_fixed_cid_and_dir(L2CAP_CID_LE_DATA,
-					&bt_sk(sk)->src, &bt_sk(sk)->dst, 1);
+	/* If this is an ATT socket, find it's matching server/client */
+	if (l2cap_pi(sk)->scid == L2CAP_CID_LE_DATA)
+		sk2 = l2cap_find_sock_by_fixed_cid_and_dir(L2CAP_CID_LE_DATA,
+					&bt_sk(sk)->src, &bt_sk(sk)->dst,
+					l2cap_pi(sk)->incoming ? 0 : 1);
 
-	/* If server socket found, request tear down */
-	BT_DBG("client:%p server:%p", sk, srv_sk);
-	if (srv_sk)
-		l2cap_sock_set_timer(srv_sk, 1);
+	/* If matching socket found, request tear down */
+	BT_DBG("sock:%p companion:%p", sk, sk2);
+	if (sk2)
+		l2cap_sock_set_timer(sk2, 1);
 
 	err = l2cap_sock_shutdown(sock, 2);
 
