@@ -68,6 +68,7 @@
 #include <mach/msm_spi.h>
 #include <mach/msm_serial_hs.h>
 #include <mach/msm_serial_hs_lite.h>
+#include <mach/bcm_bt_lpm.h>
 #include <mach/msm_iomap.h>
 #include <mach/msm_memtypes.h>
 #include <asm/mach/mmc.h>
@@ -3362,13 +3363,24 @@ static struct attribute_group vigor_properties_attr_group = {
 
 #ifdef CONFIG_SERIAL_MSM_HS
 static struct msm_serial_hs_platform_data msm_uart_dm1_pdata = {
+	.wakeup_irq = -1,
 	.inject_rx_on_wakeup = 0,
-	.cpu_lock_supported = 1,
+	.exit_lpm_cb = bcm_bt_lpm_exit_lpm_locked,
+};
 
-	/* for brcm BT */
-	.bt_wakeup_pin_supported = 1,
-	.bt_wakeup_pin = VIGOR_GPIO_BT_CHIP_WAKE,
-	.host_wakeup_pin = VIGOR_GPIO_BT_HOST_WAKE,
+static struct bcm_bt_lpm_platform_data bcm_bt_lpm_pdata = {
+	.gpio_wake = VIGOR_GPIO_BT_CHIP_WAKE,
+	.gpio_host_wake = VIGOR_GPIO_BT_HOST_WAKE,
+	.request_clock_off_locked = msm_hs_request_clock_off_locked,
+	.request_clock_on_locked = msm_hs_request_clock_on_locked,
+};
+
+struct platform_device vigor_bcm_bt_lpm_device = {
+	.name = "bcm_bt_lpm",
+	.id = 0,
+	.dev = {
+		.platform_data = &bcm_bt_lpm_pdata,
+	},
 };
 #endif
 
@@ -6155,8 +6167,6 @@ static void __init msm8x60_init_buses(void)
 #endif
 
 #ifdef CONFIG_SERIAL_MSM_HS
-	msm_uart_dm1_pdata.rx_wakeup_irq = gpio_to_irq(VIGOR_GPIO_BT_HOST_WAKE);
-	msm_device_uart_dm1.name = "msm_serial_hs_brcm"; /* for brcm BT */
 	msm_device_uart_dm1.dev.platform_data = &msm_uart_dm1_pdata;
 #endif
 
@@ -7499,6 +7509,9 @@ static struct platform_device *vigor_devices[] __initdata = {
 	&msm_gsbi5_qup_i2c_device,
 	&msm_gsbi7_qup_i2c_device,
 	&msm_gsbi12_qup_i2c_device,
+#endif
+#ifdef CONFIG_SERIAL_MSM_HS
+	&vigor_bcm_bt_lpm_device,
 #endif
 #ifdef CONFIG_BT
 	&wifi_bt_slp_clk,
