@@ -608,6 +608,37 @@ static ssize_t atmel_diag_dump(struct device *dev,
 static DEVICE_ATTR(diag, (S_IWUSR|S_IRUGO),
 	atmel_diag_show, atmel_diag_dump);
 
+
+static int unlock_recalib (int unlock) {
+       struct atmel_ts_data *ts_data;
+        ts_data = private_ts;
+
+        printk(KERN_INFO "[TP]unlock change to %d\n", unlock);
+
+        if (unlock == 2 || unlock == 3) {
+
+                ts_data->valid_press_timeout = jiffies + msecs_to_jiffies(15);
+                if (ts_data->finger_count == 0)
+                        ts_data->valid_pressed_cnt = 1;
+                else /* unlock direction: left to right */
+                        ts_data->valid_pressed_cnt = 0;
+
+                ts_data->cal_after_unlock = 0;
+                ts_data->pre_data[0] = RECALIB_UNLOCK;
+                restore_normal_threshold(ts_data);
+                i2c_atmel_write_byte_data(ts_data->client,
+                        get_object_address(ts_data, GEN_ACQUISITIONCONFIG_T8) +
+                        T8_CFG_ATCHCALST, 0x01);
+                if (time_after(jiffies, ts_data->safe_unlock_timeout))
+                        queue_delayed_work(ts_data->atmel_delayed_wq, &ts_data->unlock_work,
+                                msecs_to_jiffies(ATCHCAL_DELAY));
+                else
+                        printk(KERN_INFO "[TP]unsafe unlock, give up delta check\n");
+        }
+
+        return 0;
+}
+
 static ssize_t atmel_unlock_store(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t count)
 {
@@ -618,31 +649,7 @@ static ssize_t atmel_unlock_store(struct device *dev,
 	if (buf[0] >= '0' && buf[0] <= '9' && buf[1] == '\n')
 		unlock = buf[0] - '0';
 
-	printk(KERN_INFO "[TP]unlock change to %d\n", unlock);
-
-	if ((unlock == 2 || unlock == 3) &&
-		(ts_data->first_pressed || ts_data->finger_count) &&
-		ts_data->pre_data[0] < RECALIB_UNLOCK &&
-		ts_data->unlock_attr) {
-
-		ts_data->valid_press_timeout = jiffies + msecs_to_jiffies(15);
-		if (ts_data->finger_count == 0)
-			ts_data->valid_pressed_cnt = 1;
-		else /* unlock direction: left to right */
-			ts_data->valid_pressed_cnt = 0;
-
-		ts_data->cal_after_unlock = 0;
-		ts_data->pre_data[0] = RECALIB_UNLOCK;
-		restore_normal_threshold(ts_data);
-		i2c_atmel_write_byte_data(ts_data->client,
-			get_object_address(ts_data, GEN_ACQUISITIONCONFIG_T8) +
-			T8_CFG_ATCHCALST, 0x01);
-		if (time_after(jiffies, ts_data->safe_unlock_timeout))
-			queue_delayed_work(ts_data->atmel_delayed_wq, &ts_data->unlock_work,
-				msecs_to_jiffies(ATCHCAL_DELAY));
-		else
-			printk(KERN_INFO "[TP]unsafe unlock, give up delta check\n");
-	}
+	unlock_recalib(unlock);
 
 	return count;
 }
@@ -2231,6 +2238,8 @@ static int atmel_224e_ts_probe(struct i2c_client *client,
 
 	register_notifier_by_psensor(&psensor_status_handler);
 
+	unlock_recalib(2);
+
 	return 0;
 
 err_input_register_device_failed:
@@ -2321,6 +2330,7 @@ static int atmel_224e_ts_suspend(struct i2c_client *client, pm_message_t mesg)
 static int atmel_224e_ts_resume(struct i2c_client *client)
 {
 	struct atmel_ts_data *ts = i2c_get_clientdata(client);
+	int ret;
 	printk(KERN_INFO "[TP] unlock change to 1\n");
 
 	if (ts->workaround & TW_SHIFT)
@@ -2368,8 +2378,10 @@ static int atmel_224e_ts_resume(struct i2c_client *client)
 			T6_CFG_CALIBRATE, 0x55);
 	}
 	enable_irq(client->irq);
-
-	return 0;
+	msleep(5);
+	ret = unlock_recalib(2);
+	msleep(5);
+	return ret;
 }
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
