@@ -22,7 +22,7 @@
 
 #define DEF_TEMP_SENSOR      0
 #define DEF_THERMAL_CHECK_MS 1000
-#define DEF_ALLOWED_MAX_HIGH 50
+#define DEF_ALLOWED_MAX_HIGH 70
 #define DEF_ALLOWED_MAX_FREQ 1296000
 
 static int enabled;
