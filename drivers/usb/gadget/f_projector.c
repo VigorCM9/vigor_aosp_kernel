@@ -414,7 +414,7 @@ static void projector_complete_out(struct usb_ep *ep, struct usb_request *req)
 {
 	struct projector_dev *ctxt = &_projector_dev;
 	unsigned char *data = req->buf;
-	int mouse_data[3];
+	int mouse_data[3] = {0, 0, 0};
 	int i;
 	DBG("%s: status %d, %d bytes\n", __func__,
 		req->status, req->actual);
