@@ -2,7 +2,7 @@ VERSION = 3
 PATCHLEVEL = 0
 SUBLEVEL = 42
 EXTRAVERSION =
-NAME = Sneaky Weasel
+NAME = Funkyv1.2
 
 # *DOCUMENTATION*
 # To see a list of typical targets execute "make help"
