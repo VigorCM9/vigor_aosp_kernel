@@ -40,14 +40,14 @@ s32 wldev_ioctl(
  */
 s32 wldev_iovar_getbuf(
 	struct net_device *dev, s8 *iovar_name,
-	void *param, s32 paramlen, void *buf, s32 buflen, struct mutex *buf_sync);
+	void *param, s32 paramlen, void *buf, s32 buflen, struct mutex* buf_sync);
 
 /** Set named IOVARs, this function calls wl_dev_ioctl with
  *  WLC_SET_VAR IOCTL code
  */
 s32 wldev_iovar_setbuf(
 	struct net_device *dev, s8 *iovar_name,
-	void *param, s32 paramlen, void *buf, s32 buflen, struct mutex *buf_sync);
+	void *param, s32 paramlen, void *buf, s32 buflen, struct mutex* buf_sync);
 
 s32 wldev_iovar_setint(
 	struct net_device *dev, s8 *iovar, s32 val);
@@ -68,14 +68,14 @@ s32 wldev_mkiovar_bsscfg(
  */
 s32 wldev_iovar_getbuf_bsscfg(
 	struct net_device *dev, s8 *iovar_name, void *param, s32 paramlen,
-	void *buf, s32 buflen, s32 bsscfg_idx, struct mutex *buf_sync);
+	void *buf, s32 buflen, s32 bsscfg_idx, struct mutex* buf_sync);
 
 /** Set named and bsscfg indexed IOVARs, this function calls wl_dev_ioctl with
  *  WLC_SET_VAR IOCTL code
  */
 s32 wldev_iovar_setbuf_bsscfg(
 	struct net_device *dev, s8 *iovar_name, void *param, s32 paramlen,
-	void *buf, s32 buflen, s32 bsscfg_idx, struct mutex *buf_sync);
+	void *buf, s32 buflen, s32 bsscfg_idx, struct mutex* buf_sync);
 
 s32 wldev_iovar_getint_bsscfg(
 	struct net_device *dev, s8 *iovar, s32 *pval, s32 bssidx);
@@ -85,6 +85,7 @@ s32 wldev_iovar_setint_bsscfg(
 
 extern void get_customized_country_code(char *country_iso_code, wl_country_t *cspec);
 extern void dhd_bus_country_set(struct net_device *dev, wl_country_t *cspec);
+extern void dhd_bus_band_set(struct net_device *dev, uint band);
 extern int wldev_set_country(struct net_device *dev, char *country_code);
 extern int net_os_wake_lock(struct net_device *dev);
 extern int net_os_wake_unlock(struct net_device *dev);
@@ -92,7 +93,7 @@ extern int net_os_wake_lock_timeout(struct net_device *dev);
 extern int net_os_wake_lock_timeout_enable(struct net_device *dev, int val);
 extern int net_os_set_dtim_skip(struct net_device *dev, int val);
 extern int net_os_set_suspend_disable(struct net_device *dev, int val);
-extern int net_os_set_suspend(struct net_device *dev, int val);
+extern int net_os_set_suspend(struct net_device *dev, int val, int force);
 extern int wl_iw_parse_ssid_list_tlv(char** list_str, wlc_ssid_t* ssid,
 	int max, int *bytes_left);
 
@@ -106,5 +107,7 @@ int wldev_get_ssid(struct net_device *dev, wlc_ssid_t *pssid);
 int wldev_get_band(struct net_device *dev, uint *pband);
 
 int wldev_set_band(struct net_device *dev, uint band);
+
+int wldev_get_auto_channel(struct net_device *dev, int *chan);
 
 #endif /* __WLDEV_COMMON_H__ */
