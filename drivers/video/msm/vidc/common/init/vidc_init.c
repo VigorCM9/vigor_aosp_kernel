@@ -1,4 +1,4 @@
-/* Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
+/* Copyright (c) 2010-2012, Code Aurora Forum. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -31,20 +31,20 @@
 #include <mach/clk.h>
 #include <linux/pm_runtime.h>
 #include <mach/msm_subsystem_map.h>
-#include "vcd_api.h"
+#include <media/msm/vcd_api.h>
+#include <media/msm/vidc_init.h>
 #include "vidc_init_internal.h"
-#include "vidc_init.h"
 #include "vcd_res_tracker_api.h"
 
 #if DEBUG
-#define DBG(x...) printk(KERN_DEBUG "[VID] " x)
+#define DBG(x...) printk(KERN_DEBUG x)
 #else
 #define DBG(x...)
 #endif
 
 #define VIDC_NAME "msm_vidc_reg"
 
-#define ERR(x...) printk(KERN_ERR "[VID] " x)
+#define ERR(x...) printk(KERN_ERR x)
 
 static struct vidc_dev *vidc_device_p;
 static dev_t vidc_dev_num;
@@ -153,10 +153,7 @@ static int __devinit vidc_720p_probe(struct platform_device *pdev)
 		return -ENXIO;
 	}
 
-	/* HTC_START (klockwork issue)*/
-	if (resource->start)
-		vidc_device_p->phys_base = resource->start;
-	/* HTC_END */
+	vidc_device_p->phys_base = resource->start;
 	vidc_device_p->virt_base = ioremap(resource->start,
 	resource->end - resource->start + 1);
 
@@ -288,14 +285,14 @@ static int __init vidc_init(void)
 
 	if (unlikely(rc)) {
 		ERR("%s() :request_irq failed\n", __func__);
-		goto error_vidc_platfom_register;
+		goto error_vidc_request_irq;
 	}
 	res_trk_init(vidc_device_p->device, vidc_device_p->irq);
 	vidc_timer_wq = create_singlethread_workqueue("vidc_timer_wq");
 	if (!vidc_timer_wq) {
 		ERR("%s: create workque failed\n", __func__);
 		rc = -ENOMEM;
-		goto error_vidc_platfom_register;
+		goto error_vidc_create_workqueue;
 	}
 	DBG("Disabling IRQ in %s()\n", __func__);
 	disable_irq_nosync(vidc_device_p->irq);
@@ -318,6 +315,10 @@ static int __init vidc_init(void)
 #endif
 	return 0;
 
+error_vidc_create_workqueue:
+	free_irq(vidc_device_p->irq, vidc_device_p->device);
+error_vidc_request_irq:
+	platform_driver_unregister(&msm_vidc_720p_platform_driver);
 error_vidc_platfom_register:
 	cdev_del(&(vidc_device_p->cdev));
 error_vidc_cdev_add:
@@ -366,6 +367,59 @@ void vidc_release_firmware(void)
 	mutex_unlock(&vidc_device_p->lock);
 }
 EXPORT_SYMBOL(vidc_release_firmware);
+
+void vidc_cleanup_addr_table(struct video_client_ctx *client_ctx,
+				enum buffer_dir buffer)
+{
+	u32 *num_of_buffers = NULL;
+	u32 i = 0;
+	struct buf_addr_table *buf_addr_table;
+	if (buffer == BUFFER_TYPE_INPUT) {
+		buf_addr_table = client_ctx->input_buf_addr_table;
+		num_of_buffers = &client_ctx->num_of_input_buffers;
+		DBG("%s(): buffer = INPUT\n", __func__);
+
+	} else {
+		buf_addr_table = client_ctx->output_buf_addr_table;
+		num_of_buffers = &client_ctx->num_of_output_buffers;
+		DBG("%s(): buffer = OUTPUT\n", __func__);
+	}
+
+	if (!*num_of_buffers)
+		goto bail_out_cleanup;
+	if (!client_ctx->user_ion_client)
+		goto bail_out_cleanup;
+	for (i = 0; i < *num_of_buffers; ++i) {
+		if (buf_addr_table[i].client_data) {
+			msm_subsystem_unmap_buffer(
+			(struct msm_mapped_buffer *)
+			buf_addr_table[i].client_data);
+			buf_addr_table[i].client_data = NULL;
+		}
+		if (buf_addr_table[i].buff_ion_handle) {
+			ion_unmap_kernel(client_ctx->user_ion_client,
+					buf_addr_table[i].buff_ion_handle);
+			ion_free(client_ctx->user_ion_client,
+					buf_addr_table[i].buff_ion_handle);
+			buf_addr_table[i].buff_ion_handle = NULL;
+		}
+	}
+	if (client_ctx->vcd_h264_mv_buffer.client_data) {
+		msm_subsystem_unmap_buffer((struct msm_mapped_buffer *)
+		client_ctx->vcd_h264_mv_buffer.client_data);
+		client_ctx->vcd_h264_mv_buffer.client_data = NULL;
+	}
+	if (client_ctx->h264_mv_ion_handle) {
+		ion_unmap_kernel(client_ctx->user_ion_client,
+				client_ctx->h264_mv_ion_handle);
+		ion_free(client_ctx->user_ion_client,
+				client_ctx->h264_mv_ion_handle);
+		client_ctx->h264_mv_ion_handle = NULL;
+	}
+bail_out_cleanup:
+	return;
+}
+EXPORT_SYMBOL(vidc_cleanup_addr_table);
 
 u32 vidc_lookup_addr_table(struct video_client_ctx *client_ctx,
 	enum buffer_dir buffer,
@@ -462,6 +516,7 @@ u32 vidc_insert_addr_table(struct video_client_ctx *client_ctx,
 	struct msm_mapped_buffer *mapped_buffer = NULL;
 	size_t ion_len;
 	struct ion_handle *buff_ion_handle = NULL;
+	unsigned long ionflag;
 
 	if (!client_ctx || !length)
 		return false;
@@ -505,8 +560,15 @@ u32 vidc_insert_addr_table(struct video_client_ctx *client_ctx,
 		} else {
 			buff_ion_handle = ion_import_fd(
 				client_ctx->user_ion_client, pmem_fd);
-			if (!buff_ion_handle) {
+			if (IS_ERR_OR_NULL(buff_ion_handle)) {
 				ERR("%s(): get_ION_handle failed\n",
+				 __func__);
+				goto bail_out_add;
+			}
+			if (ion_handle_get_flags(client_ctx->user_ion_client,
+						buff_ion_handle,
+						&ionflag)) {
+				ERR("%s():ION flags fail\n",
 				 __func__);
 				goto ion_error;
 			}
@@ -514,7 +576,7 @@ u32 vidc_insert_addr_table(struct video_client_ctx *client_ctx,
 				ion_map_kernel(
 				client_ctx->user_ion_client,
 				buff_ion_handle,
-				0);
+				ionflag);
 			if (!(*kernel_vaddr)) {
 				ERR("%s():ION virtual addr fail\n",
 				 __func__);
@@ -561,7 +623,7 @@ u32 vidc_insert_addr_table(struct video_client_ctx *client_ctx,
 ion_error:
 	if (*kernel_vaddr)
 		ion_unmap_kernel(client_ctx->user_ion_client, buff_ion_handle);
-	if (buff_ion_handle)
+	if (!IS_ERR_OR_NULL(buff_ion_handle))
 		ion_free(client_ctx->user_ion_client, buff_ion_handle);
 bail_out_add:
 	mutex_unlock(&client_ctx->enrty_queue_lock);

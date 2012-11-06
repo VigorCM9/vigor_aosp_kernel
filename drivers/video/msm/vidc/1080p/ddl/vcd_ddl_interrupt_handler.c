@@ -239,10 +239,6 @@ static u32 ddl_decoder_seq_done_callback(struct ddl_context *ddl_context,
 	u32 process_further = true;
 	struct ddl_profile_info_type disp_profile_info;
 
-	/* HTC_START (klockwork issue)*/
-	memset(&seq_hdr_info, 0, sizeof(struct vidc_1080p_seq_hdr_info));
-	/* HTC_END */
-
 	DDL_MSG_MED("ddl_decoder_seq_done_callback");
 	if (!ddl->decoding ||
 		!DDLCLIENT_STATE_IS(ddl, DDL_CLIENT_WAIT_FOR_INITCODECDONE)) {
@@ -325,10 +321,8 @@ static u32 ddl_decoder_seq_done_callback(struct ddl_context *ddl_context,
 		parse_hdr_crop_data(ddl, &seq_hdr_info);
 		if (decoder->codec.codec == VCD_CODEC_H264 &&
 			seq_hdr_info.level > VIDC_1080P_H264_LEVEL4) {
-/* HTC START */
-			DDL_MSG_HIGH("H264 LEVEL(%d) > LEVEL4",
+			DDL_MSG_ERROR("WARNING: H264MaxLevelExceeded : %d",
 				seq_hdr_info.level);
-/* HTC END */
 		}
 		ddl_set_default_decoder_buffer_req(decoder, false);
 		if (decoder->header_in_start) {

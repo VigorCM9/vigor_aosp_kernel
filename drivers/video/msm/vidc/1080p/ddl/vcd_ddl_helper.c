@@ -1,4 +1,4 @@
-/* Copyright (c) 2010-2011, Code Aurora Forum. All rights reserved.
+/* Copyright (c) 2010-2012, Code Aurora Forum. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -13,6 +13,7 @@
 #include <mach/msm_memtypes.h>
 #include "vcd_ddl.h"
 #include "vcd_ddl_shared_mem.h"
+#include "vcd_res_tracker_api.h"
 
 struct ddl_context *ddl_get_context(void)
 {
@@ -246,7 +247,8 @@ u32 ddl_decoder_dpb_init(struct ddl_client_context *ddl)
 	if (dpb > DDL_MAX_BUFFER_COUNT)
 		dpb = DDL_MAX_BUFFER_COUNT;
 	for (i = 0; i < dpb; i++) {
-		if (frame[i].vcd_frm.virtual) {
+		if (!res_trk_check_for_sec_session() &&
+			frame[i].vcd_frm.virtual) {
 			if (luma_size <= frame[i].vcd_frm.alloc_len) {
 				memset(frame[i].vcd_frm.virtual,
 					 0x10101010, luma_size);
@@ -461,9 +463,7 @@ struct ddl_client_context *ddl_get_current_ddl_client_for_command(
 
 u32 ddl_get_yuv_buf_size(u32 width, u32 height, u32 format)
 {
-	/* HTC_START (klockwork issue)*/
-	u32 mem_size, width_round_up, height_round_up, align = 0;
-	/* HTC_END */
+	u32 mem_size, width_round_up, height_round_up, align;
 
 	width_round_up  = width;
 	height_round_up = height;
@@ -635,79 +635,93 @@ u32 ddl_allocate_dec_hw_buffers(struct ddl_client_context *ddl)
 	ddl_calc_dec_hw_buffers_size(ddl->codec_data.decoder.
 		codec.codec, width, height, dpb, &buf_size);
 	if (buf_size.sz_context > 0) {
+		dec_bufs->context.mem_type = DDL_MM_MEM;
 		ptr = ddl_pmem_alloc(&dec_bufs->context, buf_size.sz_context,
 			DDL_KILO_BYTE(2));
 		if (!ptr)
 			status = VCD_ERR_ALLOC_FAIL;
 	}
 	if (buf_size.sz_nb_ip > 0) {
+		dec_bufs->h264_nb_ip.mem_type = DDL_MM_MEM;
 		ptr = ddl_pmem_alloc(&dec_bufs->h264_nb_ip, buf_size.sz_nb_ip,
 			DDL_KILO_BYTE(2));
 		if (!ptr)
 			status = VCD_ERR_ALLOC_FAIL;
 	}
 	if (buf_size.sz_vert_nb_mv > 0) {
+		dec_bufs->h264_vert_nb_mv.mem_type = DDL_MM_MEM;
 		ptr = ddl_pmem_alloc(&dec_bufs->h264_vert_nb_mv,
 			buf_size.sz_vert_nb_mv, DDL_KILO_BYTE(2));
 		if (!ptr)
 			status = VCD_ERR_ALLOC_FAIL;
 	}
 	if (buf_size.sz_nb_dcac > 0) {
+		dec_bufs->nb_dcac.mem_type = DDL_MM_MEM;
 		ptr = ddl_pmem_alloc(&dec_bufs->nb_dcac, buf_size.sz_nb_dcac,
 			DDL_KILO_BYTE(2));
 		if (!ptr)
 			status = VCD_ERR_ALLOC_FAIL;
 	}
 	if (buf_size.sz_upnb_mv > 0) {
+		dec_bufs->upnb_mv.mem_type = DDL_MM_MEM;
 		ptr = ddl_pmem_alloc(&dec_bufs->upnb_mv, buf_size.sz_upnb_mv,
 			DDL_KILO_BYTE(2));
 		if (!ptr)
 			status = VCD_ERR_ALLOC_FAIL;
 	}
 	if (buf_size.sz_sub_anchor_mv > 0) {
+		dec_bufs->sub_anchor_mv.mem_type = DDL_MM_MEM;
 		ptr = ddl_pmem_alloc(&dec_bufs->sub_anchor_mv,
 			buf_size.sz_sub_anchor_mv, DDL_KILO_BYTE(2));
 		if (!ptr)
 			status = VCD_ERR_ALLOC_FAIL;
 	}
 	if (buf_size.sz_overlap_xform > 0) {
+		dec_bufs->overlay_xform.mem_type = DDL_MM_MEM;
 		ptr = ddl_pmem_alloc(&dec_bufs->overlay_xform,
 			buf_size.sz_overlap_xform, DDL_KILO_BYTE(2));
 		if (!ptr)
 			status = VCD_ERR_ALLOC_FAIL;
 	}
 	if (buf_size.sz_bit_plane3 > 0) {
+		dec_bufs->bit_plane3.mem_type = DDL_MM_MEM;
 		ptr = ddl_pmem_alloc(&dec_bufs->bit_plane3,
 			buf_size.sz_bit_plane3, DDL_KILO_BYTE(2));
 		if (!ptr)
 			status = VCD_ERR_ALLOC_FAIL;
 	}
 	if (buf_size.sz_bit_plane2 > 0) {
+		dec_bufs->bit_plane2.mem_type = DDL_MM_MEM;
 		ptr = ddl_pmem_alloc(&dec_bufs->bit_plane2,
 			buf_size.sz_bit_plane2, DDL_KILO_BYTE(2));
 		if (!ptr)
 			status = VCD_ERR_ALLOC_FAIL;
 	}
 	if (buf_size.sz_bit_plane1 > 0) {
+		dec_bufs->bit_plane1.mem_type = DDL_MM_MEM;
 		ptr = ddl_pmem_alloc(&dec_bufs->bit_plane1,
 			buf_size.sz_bit_plane1, DDL_KILO_BYTE(2));
 		if (!ptr)
 			status = VCD_ERR_ALLOC_FAIL;
 	}
 	if (buf_size.sz_stx_parser > 0) {
+		dec_bufs->stx_parser.mem_type = DDL_MM_MEM;
 		ptr = ddl_pmem_alloc(&dec_bufs->stx_parser,
 			buf_size.sz_stx_parser, DDL_KILO_BYTE(2));
 		if (!ptr)
 			status = VCD_ERR_ALLOC_FAIL;
 	}
 	if (buf_size.sz_desc > 0) {
+		dec_bufs->desc.mem_type = DDL_MM_MEM;
 		ptr = ddl_pmem_alloc(&dec_bufs->desc, buf_size.sz_desc,
 			DDL_KILO_BYTE(2));
 		if (!ptr)
 			status = VCD_ERR_ALLOC_FAIL;
-		else
-			memset(dec_bufs->desc.align_virtual_addr,
-				   0, buf_size.sz_desc);
+		else {
+			if (!res_trk_check_for_sec_session())
+				memset(dec_bufs->desc.align_virtual_addr,
+					0, buf_size.sz_desc);
+		}
 	}
 	if (status)
 		ddl_free_dec_hw_buffers(ddl);
@@ -741,11 +755,12 @@ u32 ddl_calc_enc_hw_buffers_size(enum vcd_codec codec, u32 width,
 		sz_cur_c = sz_dpb_c;
 	} else
 		status = VCD_ERR_NOT_SUPPORTED;
+	sz_context = DDL_FW_OTHER_CONTEXT_SPACE_SIZE;
 	if (!status) {
 		sz_strm = DDL_ALIGN(ddl_get_yuv_buf_size(width, height,
 			DDL_YUV_BUF_TYPE_LINEAR) + ddl_get_yuv_buf_size(width,
 			height/2, DDL_YUV_BUF_TYPE_LINEAR), DDL_KILO_BYTE(4));
-		sz_mv = DDL_ALIGN(2 * mb_x * 8, DDL_KILO_BYTE(2));
+		sz_mv = DDL_ALIGN(2 * mb_x * mb_y * 8, DDL_KILO_BYTE(2));
 		if ((codec == VCD_CODEC_MPEG4) ||
 			(codec == VCD_CODEC_H264)) {
 			sz_col_zero = DDL_ALIGN(((mb_x * mb_y + 7) / 8) *
@@ -758,6 +773,7 @@ u32 ddl_calc_enc_hw_buffers_size(enum vcd_codec codec, u32 width,
 		} else if (codec == VCD_CODEC_H264) {
 			sz_md = DDL_ALIGN(mb_x * 48, DDL_KILO_BYTE(2));
 			sz_pred = DDL_ALIGN(2 * 8 * 1024, DDL_KILO_BYTE(2));
+			sz_context = DDL_FW_H264ENC_CONTEXT_SPACE_SIZE;
 			if (ddl) {
 				if (ddl->codec_data.encoder.
 					entropy_control.entropy_sel ==
@@ -782,7 +798,6 @@ u32 ddl_calc_enc_hw_buffers_size(enum vcd_codec codec, u32 width,
 			sz_mb_info = DDL_ALIGN(mb_x * mb_y * 6 * 8,
 					DDL_KILO_BYTE(2));
 		}
-		sz_context = DDL_FW_OTHER_CONTEXT_SPACE_SIZE;
 		if (buf_size) {
 			buf_size->sz_cur_y      = sz_cur_y;
 			buf_size->sz_cur_c      = sz_cur_c;
@@ -832,48 +847,56 @@ u32 ddl_allocate_enc_hw_buffers(struct ddl_client_context *ddl)
 		enc_bufs->sz_dpb_y = buf_size.sz_dpb_y;
 		enc_bufs->sz_dpb_c = buf_size.sz_dpb_c;
 		if (buf_size.sz_mv > 0) {
+			enc_bufs->mv.mem_type = DDL_MM_MEM;
 			ptr = ddl_pmem_alloc(&enc_bufs->mv, buf_size.sz_mv,
 				DDL_KILO_BYTE(2));
 			if (!ptr)
 				status = VCD_ERR_ALLOC_FAIL;
 		}
 		if (buf_size.sz_col_zero > 0) {
+			enc_bufs->col_zero.mem_type = DDL_MM_MEM;
 			ptr = ddl_pmem_alloc(&enc_bufs->col_zero,
 				buf_size.sz_col_zero, DDL_KILO_BYTE(2));
 		if (!ptr)
 			status = VCD_ERR_ALLOC_FAIL;
 		}
 		if (buf_size.sz_md > 0) {
+			enc_bufs->md.mem_type = DDL_MM_MEM;
 			ptr = ddl_pmem_alloc(&enc_bufs->md, buf_size.sz_md,
 				DDL_KILO_BYTE(2));
 			if (!ptr)
 				status = VCD_ERR_ALLOC_FAIL;
 		}
 		if (buf_size.sz_pred > 0) {
+			enc_bufs->pred.mem_type = DDL_MM_MEM;
 			ptr = ddl_pmem_alloc(&enc_bufs->pred,
 				buf_size.sz_pred, DDL_KILO_BYTE(2));
 			if (!ptr)
 				status = VCD_ERR_ALLOC_FAIL;
 		}
 		if (buf_size.sz_nbor_info > 0) {
+			enc_bufs->nbor_info.mem_type = DDL_MM_MEM;
 			ptr = ddl_pmem_alloc(&enc_bufs->nbor_info,
 				buf_size.sz_nbor_info, DDL_KILO_BYTE(2));
 			if (!ptr)
 				status = VCD_ERR_ALLOC_FAIL;
 		}
 		if (buf_size.sz_acdc_coef > 0) {
+			enc_bufs->acdc_coef.mem_type = DDL_MM_MEM;
 			ptr = ddl_pmem_alloc(&enc_bufs->acdc_coef,
 				buf_size.sz_acdc_coef, DDL_KILO_BYTE(2));
 			if (!ptr)
 				status = VCD_ERR_ALLOC_FAIL;
 		}
 		if (buf_size.sz_mb_info > 0) {
+			enc_bufs->mb_info.mem_type = DDL_MM_MEM;
 			ptr = ddl_pmem_alloc(&enc_bufs->mb_info,
 				buf_size.sz_mb_info, DDL_KILO_BYTE(2));
 			if (!ptr)
 				status = VCD_ERR_ALLOC_FAIL;
 		}
 		if (buf_size.sz_context > 0) {
+			enc_bufs->context.mem_type = DDL_MM_MEM;
 			ptr = ddl_pmem_alloc(&enc_bufs->context,
 				buf_size.sz_context, DDL_KILO_BYTE(2));
 			if (!ptr)
@@ -947,7 +970,8 @@ u32 ddl_check_reconfig(struct ddl_client_context *ddl)
 			(decoder->frame_size.scan_lines ==
 			decoder->client_frame_size.scan_lines) &&
 			(decoder->frame_size.stride ==
-			decoder->client_frame_size.stride))
+			decoder->client_frame_size.stride) &&
+			decoder->progressive_only)
 				need_reconfig = false;
 	}
 	return need_reconfig;
