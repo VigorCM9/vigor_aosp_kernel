@@ -1,8 +1,8 @@
 VERSION = 3
 PATCHLEVEL = 0
 SUBLEVEL = 43
-EXTRAVERSION =
-NAME = Funky Kernel
+EXTRAVERSION =  FunkyAOSP-v2.2
+NAME = Sneaky Weasel
 
 # *DOCUMENTATION*
 # To see a list of typical targets execute "make help"
