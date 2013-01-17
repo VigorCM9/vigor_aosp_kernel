@@ -6,6 +6,16 @@ menu "Character devices"
 
 source "drivers/tty/Kconfig"
 
+config RANDOM_READ_WAKEUP
+	int "RNG Read Wakeup Threshold"
+	default 64
+	help
+
+config RANDOM_WRITE_WAKEUP
+	int "RNG Write Wakeup Threshold"
+	default 128
+	help
+
 config DEVMEM
 	bool "Memory device driver"
 	default y
