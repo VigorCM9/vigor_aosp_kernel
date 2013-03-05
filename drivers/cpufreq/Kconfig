@@ -172,7 +172,16 @@ config CPU_FREQ_DEFAULT_GOV_SCARY
 	select CPU_FREQ_GOV_SCARY
 	help
 
+config CPU_FREQ_DEFAULT_GOV_LIONHEART
+	bool "lionheart"
+	select CPU_FREQ_GOV_SCARY
+	help
+
 endchoice
+
+config CPU_FREQ_GOV_LIONHEART
+	tristate "'lionheart' cpufreq governor"
+	depends on CPU_FREQ
 
 config CPU_FREQ_GOV_SCARY
 	tristate "'scary' cpufreq governor"
