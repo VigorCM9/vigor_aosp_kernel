@@ -1399,7 +1399,7 @@ static int audio_open(struct inode *inode, struct file *file)
 		audio->ac->session);
 	wake_lock_init(&audio->wakelock, WAKE_LOCK_SUSPEND, wake_lock_name);
 
-	audio->out_sample_rate = 44100;
+	audio->out_sample_rate = 48000;
 	audio->out_channel_mode = 2;
 	audio->out_bits = 16;
 	audio->volume = 0x2328;
