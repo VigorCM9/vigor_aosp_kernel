@@ -473,6 +473,10 @@ config TOUCHSCREEN_ATMEL_SWEEP2WAKE
         depends on TOUCHSCREEN_ATMEL_224E
         default n
 
+config S2W_SWITCH
+	int "Sweep2Wake switch: 0=Off 1=On 2=On without LED capacitive backlight"
+        default 0
+
 config TOUCHSCREEN_SYNAPTICS_I2C_RMI
 	tristate "Synaptics i2c touchscreen"
 	depends on I2C
