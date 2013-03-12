@@ -43,11 +43,7 @@
  * The PLL hardware is capable of 384MHz to 1536MHz. The L_VALs
  * used for calibration should respect these limits. */
 #define L_VAL_SCPLL_CAL_MIN	0x08 /* =  432 MHz with 27MHz source */
-#ifdef CONFIG_CPU_OVERCLOCK
 #define L_VAL_SCPLL_CAL_MAX	0x22 /* = 1836 MHz with 27MHz source */
-#else
-#define L_VAL_SCPLL_CAL_MAX	0x1C /* = 1512 MHz with 27MHz source */
-#endif
 
 #define MAX_VDD_SC		1400000 /* uV */
 #define MIN_VDD_SC		 600000 /* uV */
@@ -229,14 +225,12 @@ static struct clkctl_acpu_speed acpu_freq_tbl_slow[] = {
   { {1, 1}, 1404000,  ACPU_SCPLL, 0, 0, 1, 0x1A, L2(19), 1175000, 0x03006000},
   { {1, 1}, 1458000,  ACPU_SCPLL, 0, 0, 1, 0x1B, L2(20), 1200000, 0x03006000},
   { {1, 1}, 1512000,  ACPU_SCPLL, 0, 0, 1, 0x1C, L2(21), 1225000, 0x03006000},
-#ifdef CONFIG_CPU_OVERCLOCK
   { {1, 1}, 1566000,  ACPU_SCPLL, 0, 0, 1, 0x1D, L2(22), 1225000, 0x03006000},
   { {1, 1}, 1620000,  ACPU_SCPLL, 0, 0, 1, 0x1E, L2(22), 1250000, 0x03006000},
   { {1, 1}, 1674000,  ACPU_SCPLL, 0, 0, 1, 0x1F, L2(22), 1275000, 0x03006000},
   { {1, 1}, 1728000,  ACPU_SCPLL, 0, 0, 1, 0x20, L2(22), 1300000, 0x03006000},
   { {1, 1}, 1782000,  ACPU_SCPLL, 0, 0, 1, 0x21, L2(22), 1325000, 0x03006000},
   { {1, 1}, 1836000,  ACPU_SCPLL, 0, 0, 1, 0x22, L2(22), 1350000, 0x03006000},
-#endif
   { {0, 0}, 0 },
 };
 
@@ -267,14 +261,12 @@ static struct clkctl_acpu_speed acpu_freq_tbl_nom[] = {
   { {1, 1}, 1404000,  ACPU_SCPLL, 0, 0, 1, 0x1A, L2(19), 1150000, 0x03006000},
   { {1, 1}, 1458000,  ACPU_SCPLL, 0, 0, 1, 0x1B, L2(20), 1150000, 0x03006000},
   { {1, 1}, 1512000,  ACPU_SCPLL, 0, 0, 1, 0x1C, L2(21), 1175000, 0x03006000},
-#ifdef CONFIG_CPU_OVERCLOCK
   { {1, 1}, 1566000,  ACPU_SCPLL, 0, 0, 1, 0x1D, L2(22), 1175000, 0x03006000},
   { {1, 1}, 1620000,  ACPU_SCPLL, 0, 0, 1, 0x1E, L2(22), 1200000, 0x03006000},
   { {1, 1}, 1674000,  ACPU_SCPLL, 0, 0, 1, 0x1F, L2(22), 1225000, 0x03006000},
   { {1, 1}, 1728000,  ACPU_SCPLL, 0, 0, 1, 0x20, L2(22), 1250000, 0x03006000},
   { {1, 1}, 1782000,  ACPU_SCPLL, 0, 0, 1, 0x21, L2(22), 1275000, 0x03006000},
   { {1, 1}, 1836000,  ACPU_SCPLL, 0, 0, 1, 0x22, L2(22), 1300000, 0x03006000},
-#endif
   { {0, 0}, 0 },
 };
 
@@ -305,14 +297,12 @@ static struct clkctl_acpu_speed acpu_freq_tbl_fast[] = {
   { {1, 1}, 1404000,  ACPU_SCPLL, 0, 0, 1, 0x1A, L2(19), 1100000, 0x03006000},
   { {1, 1}, 1458000,  ACPU_SCPLL, 0, 0, 1, 0x1B, L2(20), 1100000, 0x03006000},
   { {1, 1}, 1512000,  ACPU_SCPLL, 0, 0, 1, 0x1C, L2(21), 1125000, 0x03006000},
-#ifdef CONFIG_CPU_OVERCLOCK
   { {1, 1}, 1566000,  ACPU_SCPLL, 0, 0, 1, 0x1D, L2(22), 1125000, 0x03006000},
   { {1, 1}, 1620000,  ACPU_SCPLL, 0, 0, 1, 0x1E, L2(22), 1150000, 0x03006000},
   { {1, 1}, 1674000,  ACPU_SCPLL, 0, 0, 1, 0x1F, L2(22), 1175000, 0x03006000},
   { {1, 1}, 1728000,  ACPU_SCPLL, 0, 0, 1, 0x20, L2(22), 1200000, 0x03006000},
   { {1, 1}, 1782000,  ACPU_SCPLL, 0, 0, 1, 0x21, L2(22), 1225000, 0x03006000},
   { {1, 1}, 1836000,  ACPU_SCPLL, 0, 0, 1, 0x22, L2(22), 1250000, 0x03006000},
-#endif
   { {0, 0}, 0 },
 };
 
@@ -1027,11 +1017,9 @@ int processor_name_read_proc(char *page, char **start, off_t off,
 			   int count, int *eof, void *data)
 {
 	char *p = page;
-#ifdef CONFIG_CPU_OVERCLOCK
+
 	p += sprintf(p, "1.83 GHz dual core");
-#else
-	p += sprintf(p, "1.51 GHz dual core");
-#endif
+
 	return p - page;
 }
 
