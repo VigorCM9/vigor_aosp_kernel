@@ -570,13 +570,7 @@ config TCP_CONG_ILLINOIS
 config TCP_CONG_SOCIOPATH
 	tristate "TCP Sociopath"
 	default n
-	--help--
-	This is basically TCP Reno with no slow start and a much more
-	aggressive ssthresh recalculation (lowers it by 5% instead of 50%).
-	Use responsibly!
-	
-	For further details see:
-	  https://github.com/mlucy/tcp_sociopath
+
 choice
 	prompt "Default TCP congestion control"
 	default DEFAULT_CUBIC
