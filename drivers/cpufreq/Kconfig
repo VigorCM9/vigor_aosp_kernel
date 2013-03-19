@@ -182,7 +182,16 @@ config CPU_FREQ_DEFAULT_GOV_LULZACTIVE
 	select CPU_FREQ_GOV_LULZACTIVE
 	help
 
+config CPU_FREQ_DEFAULT_GOV_BRAZILIANWAX
+	bool "BrazilianWax"
+	select CPU_FREQ_GOV_BRAZILIANWAX
+	help
+
 endchoice
+
+config CPU_FREQ_GOV_BRAZILIANWAX
+	tristate "'BrazilianWax' cpufreq governor"
+	depends on CPU_FREQ
 
 config CPU_FREQ_GOV_LULZACTIVE
 	tristate "'lulzactive' cpufreq governor"

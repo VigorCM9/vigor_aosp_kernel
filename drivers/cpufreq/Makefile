@@ -21,6 +21,7 @@ obj-$(CONFIG_CPU_FREQ_GOV_NIGHTMARE)	+= cpufreq_nightmare.o
 obj-$(CONFIG_CPU_FREQ_GOV_SCARY)	+= cpufreq_scary.o
 obj-$(CONFIG_CPU_FREQ_GOV_LIONHEART)	+= cpufreq_lionheart.o
 obj-$(CONFIG_CPU_FREQ_GOV_LULZACTIVE)	+= cpufreq_lulzactive.o
+obj-$(CONFIG_CPU_FREQ_GOV_BRAZILIANWAX)	+= cpufreq_brazilianwax.o
 # CPUfreq cross-arch helpers
 obj-$(CONFIG_CPU_FREQ_TABLE)		+= freq_table.o
 
