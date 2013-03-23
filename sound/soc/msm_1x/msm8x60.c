@@ -53,7 +53,7 @@ EXPORT_SYMBOL(session_route);
 static struct snd_kcontrol_new snd_msm_controls[];
 
 char snddev_name[AUDIO_DEV_CTL_MAX_DEV][44];
-#define MSM_MAX_VOLUME 0x2000
+#define MSM_MAX_VOLUME 0x2328
 #define MSM_VOLUME_STEP ((MSM_MAX_VOLUME+207)/100)
 
 static int device_index; /* Count of Device controls */

@@ -174,18 +174,18 @@ config CPU_FREQ_DEFAULT_GOV_SCARY
 
 config CPU_FREQ_DEFAULT_GOV_LIONHEART
 	bool "lionheart"
-	select CPU_FREQ_GOV_SCARY
+	select CPU_FREQ_GOV_LIONHEART
 	help
 
 config CPU_FREQ_DEFAULT_GOV_LULZACTIVE
-	bool "lionheart"
-	select CPU_FREQ_GOV_SCARY
+	bool "lulzactive"
+	select CPU_FREQ_GOV_LULZACTIVE
 	help
 
 endchoice
 
 config CPU_FREQ_GOV_LULZACTIVE
-	tristate "'lionheart' cpufreq governor"
+	tristate "'lulzactive' cpufreq governor"
 	depends on CPU_FREQ
 
 config CPU_FREQ_GOV_LIONHEART
