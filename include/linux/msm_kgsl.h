@@ -9,7 +9,6 @@
 #define KGSL_CONTEXT_NO_GMEM_ALLOC	2
 #define KGSL_CONTEXT_SUBMIT_IB_LIST	4
 #define KGSL_CONTEXT_CTX_SWITCH	8
-#define KGSL_CONTEXT_PREAMBLE	16
 
 /* Memory allocayion flags */
 #define KGSL_MEMFLAGS_GPUREADONLY	0x01000000
@@ -34,16 +33,6 @@
 #define KGSL_CLK_MEM_IFACE 0x00000010
 #define KGSL_CLK_AXI	0x00000020
 
-/*
- * Reset status values for context
- */
-enum kgsl_ctx_reset_stat {
-	KGSL_CTX_STAT_NO_ERROR				= 0x00000000,
-	KGSL_CTX_STAT_GUILTY_CONTEXT_RESET_EXT		= 0x00000001,
-	KGSL_CTX_STAT_INNOCENT_CONTEXT_RESET_EXT	= 0x00000002,
-	KGSL_CTX_STAT_UNKNOWN_CONTEXT_RESET_EXT		= 0x00000003
-};
-
 #define KGSL_MAX_PWRLEVELS 5
 
 #define KGSL_CONVERT_TO_MBPS(val) \
@@ -62,7 +51,6 @@ enum kgsl_user_mem_type {
 	KGSL_USER_MEM_TYPE_ASHMEM	= 0x00000001,
 	KGSL_USER_MEM_TYPE_ADDR		= 0x00000002,
 	KGSL_USER_MEM_TYPE_ION		= 0x00000003,
-	KGSL_USER_MEM_TYPE_MAX		= 0x00000004,
 };
 
 struct kgsl_devinfo {
@@ -120,7 +108,6 @@ enum kgsl_property_type {
 	KGSL_PROP_MMU_ENABLE 	  = 0x00000006,
 	KGSL_PROP_INTERRUPT_WAITS = 0x00000007,
 	KGSL_PROP_VERSION         = 0x00000008,
-	KGSL_PROP_GPU_RESET_STAT  = 0x00000009
 };
 
 struct kgsl_shadowprop {
@@ -158,7 +145,6 @@ struct kgsl_device_platform_data {
 	int num_levels;
 	int (*set_grp_async)(void);
 	unsigned int idle_timeout;
-	bool strtstp_sleepwake;
 	unsigned int nap_allowed;
 	unsigned int clk_map;
 	struct msm_bus_scale_pdata *bus_scale_table;
